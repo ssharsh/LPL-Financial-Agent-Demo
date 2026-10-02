@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background-color: #f4f5f7;
+  color: #111827;
+}
+
+/* Shared subtle fade/slide-in micro-interaction for incoming messages and
+   inline visualizations. Later features apply `.message-in` to new content. */
+@keyframes message-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-in {
+  animation: message-in 0.28s ease-out both;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  .message-in {
+    animation: none;
+  }
+}
