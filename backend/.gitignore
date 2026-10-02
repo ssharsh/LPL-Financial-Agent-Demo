@@ -9,5 +9,8 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
+# Package build metadata from `pip install -e .`
+*.egg-info/
+
 # CDK build output
 cdk.out/

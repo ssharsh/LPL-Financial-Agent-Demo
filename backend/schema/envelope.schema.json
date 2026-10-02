@@ -1,0 +1,174 @@
+{
+  "$defs": {
+    "Chart": {
+      "additionalProperties": false,
+      "properties": {
+        "rows": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "title": "Rows",
+          "type": "array"
+        },
+        "series": {
+          "title": "Series",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "x": {
+          "title": "X",
+          "type": "string"
+        },
+        "y": {
+          "title": "Y",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "x",
+        "y",
+        "series",
+        "rows"
+      ],
+      "title": "Chart",
+      "type": "object"
+    },
+    "Declined": {
+      "additionalProperties": false,
+      "properties": {
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason"
+      ],
+      "title": "Declined",
+      "type": "object"
+    },
+    "Source": {
+      "additionalProperties": false,
+      "properties": {
+        "as_of": {
+          "title": "As Of",
+          "type": "string"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "description",
+        "as_of"
+      ],
+      "title": "Source",
+      "type": "object"
+    },
+    "Verification": {
+      "additionalProperties": false,
+      "properties": {
+        "reference_id": {
+          "title": "Reference Id",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "verified_at": {
+          "title": "Verified At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "reference_id",
+        "verified_at"
+      ],
+      "title": "Verification",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "chart": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Chart"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "declined": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Declined"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "interpretation": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Interpretation"
+    },
+    "log_id": {
+      "title": "Log Id",
+      "type": "string"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/Source"
+      },
+      "title": "Sources",
+      "type": "array"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    },
+    "verification": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Verification"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "text",
+    "interpretation",
+    "sources",
+    "chart",
+    "log_id",
+    "verification",
+    "declined"
+  ],
+  "title": "Envelope",
+  "type": "object"
+}

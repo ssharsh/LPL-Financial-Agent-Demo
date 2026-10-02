@@ -1,3 +1,5 @@
 boto3==1.43.108
 psycopg2-binary==2.9.13
 python-dotenv==1.2.4
+strands-agents==1.57.2
+pydantic==2.13.5

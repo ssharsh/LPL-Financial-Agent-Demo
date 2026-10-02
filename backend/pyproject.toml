@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "advisor"
+version = "0.1.0"
+description = "LPL hackathon client chat assistant backend"
+requires-python = ">=3.12"
+# Runtime dependencies are pinned in requirements.txt; install those first.
+
+[project.scripts]
+# After `pip install -e .`, run `advisor seed`, `advisor ask ...` from any folder.
+advisor = "advisor.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
