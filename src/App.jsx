@@ -85,7 +85,19 @@ export default function App() {
       {/* Main 3-zone layout: chat | portfolio | transcript log.
           Panels collapse on smaller screens so chat stays usable on mobile. */}
       <main className="mx-auto flex w-full max-w-[1600px] flex-1 gap-4 overflow-hidden p-2 sm:p-4">
-        {/* Zone 1: Chat */}
+        {/* Zone 1: Transcript log (left, visible from lg) */}
+        <section
+          aria-label="Conversation log"
+          className="hidden flex-col rounded-lg border border-gray-200 bg-white lg:flex lg:w-64 xl:w-72"
+        >
+          <TranscriptLog
+            messages={messages}
+            client={client}
+            onRequestConfirmation={handleRequestConfirmation}
+          />
+        </section>
+
+        {/* Zone 2: Chat (center) */}
         <section
           aria-label="Chat"
           className="flex min-w-0 flex-1 flex-col rounded-lg border border-gray-200 bg-white"
@@ -111,24 +123,12 @@ export default function App() {
           />
         </section>
 
-        {/* Zone 2: Portfolio (visible from md so all three show at ~1366px) */}
+        {/* Zone 3: Portfolio (right, visible from md so all three show at ~1366px) */}
         <section
           aria-label="Portfolio"
           className="hidden flex-col rounded-lg border border-gray-200 bg-white md:flex md:w-72 xl:w-80"
         >
           <PortfolioPanel />
-        </section>
-
-        {/* Zone 3: Transcript log (visible from lg) */}
-        <section
-          aria-label="Conversation log"
-          className="hidden flex-col rounded-lg border border-gray-200 bg-white lg:flex lg:w-64 xl:w-72"
-        >
-          <TranscriptLog
-            messages={messages}
-            client={client}
-            onRequestConfirmation={handleRequestConfirmation}
-          />
         </section>
       </main>
     </div>
