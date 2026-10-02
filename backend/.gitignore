@@ -1,0 +1,13 @@
+# Python virtual environment
+.venv/
+
+# Local secrets and config (commit .env.example instead)
+.env
+
+# Python caches
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# CDK build output
+cdk.out/
