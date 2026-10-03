@@ -1,12 +1,13 @@
-// Clickable starter questions to beat the blank-page problem. These map to
-// the retrieval engine's handlers so every one returns a grounded answer.
+// Clickable starter questions to beat the blank-page problem. Each one maps to
+// a backend fact tool (accounts, performance, holdings, transactions); the last
+// shows the assistant declining to give advice.
 const PROMPTS = [
-  "What is my total portfolio value?",
-  "Where is my money invested?",
-  "How much do I have in technology?",
-  "How has my portfolio performed this year?",
-  "What are my largest holdings?",
-  "How much cash do I have available?",
+  "What are my accounts worth?",
+  "How did my portfolio perform from October 2024 to September 2026?",
+  "What do I hold, by asset class?",
+  "Show my deposits and withdrawals in 2026",
+  "How did my accounts do in September 2026?",
+  "Should I buy more stocks?",
 ];
 
 export default function SuggestedPrompts({ onPick, disabled }) {

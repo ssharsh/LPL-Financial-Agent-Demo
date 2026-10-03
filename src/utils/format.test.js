@@ -57,6 +57,10 @@ describe("formatDate (timezone-safe for date-only strings)", () => {
     // The bug this guards against: UTC parse + local format rolling back a day.
     expect(formatDate("2025-10-31")).toBe("Oct 31, 2025");
   });
+  it("FMT-D3: a YYYY-MM month renders as month + year, no shift", () => {
+    expect(formatDate("2026-09")).toBe("Sep 2026");
+    expect(formatDate("2024-10")).toBe("Oct 2024");
+  });
   it("FMT-D2: empty input renders as em dash", () => {
     expect(formatDate("")).toBe("—");
     expect(formatDate(null)).toBe("—");

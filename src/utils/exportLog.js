@@ -33,6 +33,9 @@ export function buildTranscript(messages, client) {
         lines.push("  Based on portfolio data:");
         m.citations.forEach((c) => lines.push(`    - ${c.label}: ${c.detail}`));
       }
+      if (m.logId) {
+        lines.push(`  Log ID: ${m.logId}`);
+      }
       if (m.confirmation === "requested") {
         lines.push("  >> FLAGGED BY CLIENT FOR ADVISOR CONFIRMATION");
       }

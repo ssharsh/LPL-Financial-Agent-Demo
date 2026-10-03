@@ -59,6 +59,12 @@ describe("buildTranscript (export log for advisor review)", () => {
     expect(t).toContain("FLAGGED BY CLIENT FOR ADVISOR CONFIRMATION");
   });
 
+  it("EXP-6: includes the backend log id under assistant answers", () => {
+    const withLog = [messages[0], { ...messages[1], logId: "log_abc123" }];
+    expect(buildTranscript(withLog, client)).toContain("  Log ID: log_abc123");
+    expect(buildTranscript(messages, client)).not.toContain("Log ID:");
+  });
+
   it("EXP-EDGE: an empty conversation still produces a valid transcript", () => {
     const t = buildTranscript([], client);
     expect(t).toContain("No conversation yet");

@@ -27,19 +27,31 @@ export function formatSignedCurrency(value) {
   return value < 0 ? `-${base}` : `+${base}`;
 }
 
-// Parse an ISO string. Date-only strings (YYYY-MM-DD) are treated as local
-// time so they don't shift a day due to UTC parsing.
+const MONTH_ONLY = /^\d{4}-\d{2}$/;
+
+// Parse an ISO string. Date-only (YYYY-MM-DD) and month-only (YYYY-MM) strings
+// are treated as local time so they don't shift due to UTC parsing.
 function parseDate(isoString) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(isoString)) {
     const [y, m, d] = isoString.split("-").map(Number);
     return new Date(y, m - 1, d);
   }
+  if (MONTH_ONLY.test(isoString)) {
+    const [y, m] = isoString.split("-").map(Number);
+    return new Date(y, m - 1, 1);
+  }
   return new Date(isoString);
 }
 
-// Human-readable date, e.g. "Oct 2, 2026".
+// Human-readable date, e.g. "Oct 2, 2026" ("Sep 2026" for a YYYY-MM month).
 export function formatDate(isoString) {
   if (!isoString) return "—";
+  if (MONTH_ONLY.test(isoString)) {
+    return parseDate(isoString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+    });
+  }
   return parseDate(isoString).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",

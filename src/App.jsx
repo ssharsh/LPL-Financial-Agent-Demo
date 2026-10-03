@@ -1,24 +1,54 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import ChatWindow from "./components/chat/ChatWindow.jsx";
 import PortfolioPanel from "./components/portfolio/PortfolioPanel.jsx";
 import TranscriptLog from "./components/log/TranscriptLog.jsx";
 import ErrorState from "./components/common/ErrorState.jsx";
-import { sendMessage, makeUserMessage, getClientInfo } from "./services/chatService.js";
+import {
+  sendMessage,
+  makeUserMessage,
+  getPortfolio,
+  toClientInfo,
+  newConversationId,
+  PLACEHOLDER_CLIENT,
+} from "./services/chatService.js";
 
 // Top-level layout for the LPL grounded portfolio chatbot.
 // Conversation state lives here so every zone (chat / portfolio / log) shares
 // one source of truth: the chat renders it, the transcript log mirrors it and
 // drives flag-for-confirmation + export.
 export default function App() {
-  const client = getClientInfo();
+  const [conversationId] = useState(newConversationId);
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
   const [lastQuestion, setLastQuestion] = useState(null);
 
+  // Portfolio panel + header data from /api/portfolio.
+  const [portfolio, setPortfolio] = useState(null);
+  const [portfolioLoading, setPortfolioLoading] = useState(true);
+  const [portfolioError, setPortfolioError] = useState(null);
+
+  const loadPortfolio = useCallback(async () => {
+    setPortfolioLoading(true);
+    setPortfolioError(null);
+    try {
+      setPortfolio(await getPortfolio());
+    } catch (err) {
+      setPortfolioError(err.message || "Could not load your portfolio.");
+    } finally {
+      setPortfolioLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPortfolio();
+  }, [loadPortfolio]);
+
+  const client = portfolio ? toClientInfo(portfolio) : PLACEHOLDER_CLIENT;
+
   // Send a question: push the user message, show typing, then append the
-  // grounded bot reply from the chat service. Surfaces a retryable error if the
-  // service call fails.
+  // grounded bot reply from the backend. On failure the user message is removed
+  // again, so Retry re-sends it without showing the question twice.
   const handleSend = useCallback(
     async (text) => {
       if (isTyping) return;
@@ -28,15 +58,16 @@ export default function App() {
       setMessages((prev) => [...prev, userMsg]);
       setIsTyping(true);
       try {
-        const botMsg = await sendMessage(text);
+        const botMsg = await sendMessage(text, conversationId);
         setMessages((prev) => [...prev, botMsg]);
       } catch (err) {
-        setError("Could not reach the portfolio assistant. Please try again.");
+        setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
+        setError(err.message || "Could not reach the portfolio assistant. Please try again.");
       } finally {
         setIsTyping(false);
       }
     },
-    [isTyping]
+    [isTyping, conversationId]
   );
 
   // Flag a specific answer for advisor confirmation (mocked "sent" state).
@@ -116,7 +147,12 @@ export default function App() {
           aria-label="Portfolio"
           className="hidden flex-col rounded-lg border border-gray-200 bg-white md:flex md:w-72 xl:w-80"
         >
-          <PortfolioPanel />
+          <PortfolioPanel
+            portfolio={portfolio}
+            loading={portfolioLoading}
+            error={portfolioError}
+            onRetry={loadPortfolio}
+          />
         </section>
 
         {/* Zone 3: Transcript log (visible from lg) */}

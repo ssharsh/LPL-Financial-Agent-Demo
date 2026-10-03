@@ -1,5 +1,15 @@
 import { formatTime } from "../../utils/format.js";
-import MessageData from "./MessageData.jsx";
+import ChartRenderer from "./ChartRenderer.jsx";
+
+// The model sometimes uses **bold** markdown; show it as bold instead of
+// literal asterisks. Everything else stays plain text (no HTML injection).
+function renderBold(text) {
+  return String(text ?? "")
+    .split(/(\*\*[^*\n]+\*\*)/g)
+    .map((part, i) =>
+      /^\*\*[^*\n]+\*\*$/.test(part) ? <strong key={i}>{part.slice(2, -2)}</strong> : part
+    );
+}
 
 // Renders one chat message. User messages are simple right-aligned bubbles.
 // Assistant messages show the grounded answer, the "Based on:" citations that
@@ -39,7 +49,8 @@ export default function MessageBubble({ message, onRequestConfirmation }) {
       >
         LPL
       </div>
-      <div className="max-w-[85%] space-y-2">
+      {/* Charts have no intrinsic width, so a bubble with one takes the full column */}
+      <div className={`max-w-[85%] space-y-2 ${message.chart ? "w-full" : ""}`}>
         <div
           className={[
             "rounded-2xl rounded-bl-sm px-4 py-3 text-sm shadow-soft",
@@ -53,12 +64,15 @@ export default function MessageBubble({ message, onRequestConfirmation }) {
               <span aria-hidden="true">⚠️</span> Not financial advice
             </p>
           )}
-          <p className="whitespace-pre-wrap">{message.text}</p>
+          {message.interpretation && (
+            <p className="mb-1 text-xs italic text-gray-500">{message.interpretation}</p>
+          )}
+          <p className="whitespace-pre-wrap">{renderBold(message.text)}</p>
 
-          {/* Inline visualization of the grounded data behind the answer */}
-          {message.data && (
+          {/* Inline chart built by the backend from this answer's tool results */}
+          {message.chart && (
             <div className="mt-3 border-t border-gray-200 pt-3">
-              <MessageData data={message.data} />
+              <ChartRenderer chart={message.chart} />
             </div>
           )}
 
@@ -84,6 +98,9 @@ export default function MessageBubble({ message, onRequestConfirmation }) {
         {/* Footer: timestamp + flag-for-confirmation (only on grounded answers) */}
         <div className="flex items-center gap-3 px-1">
           <span className="text-[10px] text-gray-500">{formatTime(message.createdAt)}</span>
+          {message.logId && (
+            <span className="text-[10px] text-gray-500">Log {message.logId}</span>
+          )}
           {!declined && !unknown && (
             message.confirmation === "requested" ? (
               <span className="flex items-center gap-1 text-[10px] font-medium text-brand">

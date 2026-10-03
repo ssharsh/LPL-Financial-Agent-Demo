@@ -1,8 +1,9 @@
 import { formatCurrency, formatPercent } from "../../utils/format.js";
 
-// Compact table of individual holdings, sorted by size.
+// Compact table of individual holdings, sorted by size. Values arrive from the
+// backend as exact strings ("117969.10") and are converted only for display.
 export default function HoldingsTable({ holdings }) {
-  const sorted = [...holdings].sort((a, b) => b.value - a.value);
+  const sorted = [...holdings].sort((a, b) => Number(b.market_value) - Number(a.market_value));
 
   return (
     <div>
@@ -14,7 +15,6 @@ export default function HoldingsTable({ holdings }) {
           <tr className="text-gray-500">
             <th scope="col" className="pb-1 font-medium">Holding</th>
             <th scope="col" className="pb-1 text-right font-medium">Value</th>
-            <th scope="col" className="pb-1 text-right font-medium">Gain</th>
           </tr>
         </thead>
         <tbody>
@@ -26,21 +26,11 @@ export default function HoldingsTable({ holdings }) {
               </td>
               <td className="py-1.5 text-right align-top">
                 <div className="font-medium text-gray-800">
-                  {formatCurrency(h.value)}
+                  {formatCurrency(Number(h.market_value))}
                 </div>
-                <div className="text-[10px] text-gray-500">{formatPercent(h.percent)}</div>
-              </td>
-              <td
-                className={[
-                  "py-1.5 text-right align-top font-medium",
-                  h.gainPercent > 0
-                    ? "text-green-700"
-                    : h.gainPercent < 0
-                    ? "text-red-700"
-                    : "text-gray-600",
-                ].join(" ")}
-              >
-                {formatPercent(h.gainPercent, { signed: true })}
+                <div className="text-[10px] text-gray-500">
+                  {formatPercent(Number(h.weight_pct))}
+                </div>
               </td>
             </tr>
           ))}

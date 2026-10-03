@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "backend": "cd backend && .venv/bin/uvicorn --factory advisor.server:create_app --app-dir src --host 127.0.0.1 --port 8000",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"
