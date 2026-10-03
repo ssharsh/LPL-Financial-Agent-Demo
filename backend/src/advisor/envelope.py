@@ -1,7 +1,8 @@
 """The response envelope: the one JSON shape every request returns (brief section 7).
 
 The frontend builds against this shape. Do not add, remove, or rename fields without telling the user.
-`interpretation`, `chart`, `verification`, and `declined` are null when they do not apply (always in Phase 1).
+`interpretation`, `verification`, and `declined` are null when they do not apply (always in Phase 1).
+`chart` is derived in code from the turn's successful tool results (advisor.charts), or null when none fit.
 Every field has no default, so all seven keys must be present in every envelope.
 
 `python -m advisor.envelope` regenerates backend/schema/envelope.schema.json.
@@ -12,6 +13,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict
 
+from advisor.charts import chart_from_ledger
 from advisor.config import BACKEND_ROOT
 from advisor.tools.ledger import RequestLedger
 
@@ -74,15 +76,16 @@ def write_schema() -> None:
 
 
 def build_envelope(text: str, ledger: RequestLedger, log_id: str) -> Envelope:
-    """Phase 1 envelope: sources come only from the ledger's successful tool calls; the four optional parts
-    (interpretation, chart, verification, declined) arrive in later phases and are null."""
+    """Phase 1 envelope: sources come only from the ledger's successful tool calls; the chart is derived in
+    code from the same calls' results (never from the model). interpretation, verification, and declined
+    arrive in later phases and are null."""
     return Envelope(
         text=text,
         interpretation=None,
         sources=[
             Source(type=s.type, description=s.description, as_of=s.as_of.isoformat()) for s in ledger.sources()
         ],
-        chart=None,
+        chart=chart_from_ledger(ledger),
         log_id=log_id,
         verification=None,
         declined=None,

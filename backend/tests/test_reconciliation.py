@@ -13,7 +13,7 @@ ACCOUNT_IDS = [101, 102, 103, 104, 105, 106, 107]
 
 @pytest.fixture(scope="module")
 def ds():
-    from advisor.data.seed import generate_dataset
+    from seed_data import generate_dataset
 
     return generate_dataset()
 

@@ -3,7 +3,7 @@
 import pytest
 
 from advisor.data.memory_repo import MemoryRepository
-from advisor.data.seed import generate_dataset
+from seed_data import generate_dataset
 from advisor.identity import resolve_identity
 
 

@@ -16,7 +16,7 @@ from advisor.data.models import (
     SECURITY_TYPES,
     TXN_TYPES,
 )
-from advisor.data.seed import PRICE_SPECS, generate_dataset, summarize
+from seed_data import PRICE_SPECS, generate_dataset, summarize
 
 D = Decimal
 
@@ -315,7 +315,7 @@ def test_exposure_ranges(ds):
 
 
 def test_exposure_drift_bounds(ds):
-    from advisor.data.seed import INITIAL_SECTOR_WEIGHTS
+    from seed_data import INITIAL_SECTOR_WEIGHTS
 
     grouped = _exposure_weights(ds)
     as_of = sorted({e.as_of_date for e in ds.security_exposures})
@@ -329,7 +329,7 @@ def test_exposure_drift_bounds(ds):
 
 
 def test_industry_rows_sum_to_their_sector(ds):
-    from advisor.data.seed import INDUSTRY_SPLITS
+    from seed_data import INDUSTRY_SPLITS
 
     grouped = _exposure_weights(ds)
     for (sid, exposure_type, day), sectors in grouped.items():

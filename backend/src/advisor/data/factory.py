@@ -1,17 +1,18 @@
-"""Builds the Repository selected by DATA_BACKEND."""
+"""Builds the Repository. The only data source is the LPLTeam20 Postgres database (DATA_BACKEND=postgres)."""
 
 from advisor.config import DataSettings
 from advisor.data.memory_repo import MemoryRepository
 from advisor.data.repository import Repository
-from advisor.data.seed import generate_dataset
-from advisor.errors import ConfigError, PhaseNotAvailableError
+from advisor.errors import ConfigError
 
 
 def build_repository(settings: DataSettings) -> Repository:
-    if settings.data_backend == "memory":
-        return MemoryRepository(generate_dataset())
-    if settings.data_backend == "postgres":
-        raise PhaseNotAvailableError(
-            "DATA_BACKEND=postgres: the Postgres backend arrives in Phase 3. Use DATA_BACKEND=memory for now."
+    if settings.data_backend != "postgres" or settings.postgres is None:
+        raise ConfigError(
+            "DATA_BACKEND=postgres with AWS_REGION, DB_HOST, DB_PORT, DB_NAME, DB_USER is required. "
+            "There is no seed or sample data."
         )
-    raise ConfigError(f"DATA_BACKEND={settings.data_backend!r} is not supported. Allowed value: memory.")
+    from advisor.data.postgres_loader import load_dataset
+
+    # One read-only load at startup; MemoryRepository only holds that snapshot and applies session scoping.
+    return MemoryRepository(load_dataset(settings.postgres))

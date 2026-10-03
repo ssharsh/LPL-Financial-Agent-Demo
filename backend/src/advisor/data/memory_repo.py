@@ -6,7 +6,9 @@ from decimal import Decimal
 
 from advisor.data.models import (
     Account,
+    Advisor,
     AssetClass,
+    Client,
     Dataset,
     Holding,
     IdentityRecord,
@@ -25,6 +27,7 @@ def _in_range(day: date, start_date: date | None, end_date: date | None) -> bool
 
 class MemoryRepository(Repository):
     def __init__(self, dataset: Dataset):
+        self._advisors = {a.advisor_id: a for a in dataset.advisors}
         self._clients = {c.client_id: c for c in dataset.clients}
         self._accounts = sorted(dataset.accounts, key=lambda a: a.account_id)
         self._holdings = sorted(dataset.holdings, key=lambda h: h.holding_id)
@@ -49,6 +52,12 @@ class MemoryRepository(Repository):
         if account_ids is not None:
             owned &= set(account_ids)
         return owned
+
+    def get_client(self, session: SessionContext) -> Client:
+        return self._clients[session.client_id]
+
+    def get_advisor(self, session: SessionContext) -> Advisor | None:
+        return self._advisors.get(session.advisor_id)
 
     def list_accounts(self, session: SessionContext) -> list[Account]:
         owned = self._owned(session, None)

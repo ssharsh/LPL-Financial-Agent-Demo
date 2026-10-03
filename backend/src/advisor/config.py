@@ -34,9 +34,24 @@ def require_vars(names: Iterable[str], environ: Mapping[str, str]) -> dict[str, 
     return {name: environ[name] for name in names}
 
 
+POSTGRES_VARS = ("AWS_REGION", "DB_HOST", "DB_PORT", "DB_NAME", "DB_USER")
+
+
+@dataclass(frozen=True, slots=True)
+class PostgresSettings:
+    """Aurora PostgreSQL connection (IAM database auth: a fresh token per connect, no stored password)."""
+
+    aws_region: str
+    host: str
+    port: int
+    dbname: str
+    user: str
+
+
 @dataclass(frozen=True, slots=True)
 class DataSettings:
     data_backend: str
+    postgres: PostgresSettings | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,16 +60,33 @@ class ChatSettings:
     audit_backend: str
     aws_region: str
     bedrock_model_id: str
+    postgres: PostgresSettings | None = None
 
 
 def _check_data_backend(value: str) -> str:
-    if value == "memory":
-        return value
     if value == "postgres":
-        raise PhaseNotAvailableError(
-            "DATA_BACKEND=postgres: the Postgres backend arrives in Phase 3. Use DATA_BACKEND=memory for now."
-        )
-    raise ConfigError(f"DATA_BACKEND={value!r} is not supported. Allowed value: memory.")
+        return value
+    raise ConfigError(
+        f"DATA_BACKEND={value!r} is not supported. Allowed value: postgres (seed/sample data was removed)."
+    )
+
+
+def _postgres_settings(data_backend: str, environ: Mapping[str, str]) -> PostgresSettings | None:
+    """The Postgres connection settings when DATA_BACKEND=postgres, else None."""
+    if data_backend != "postgres":
+        return None
+    values = require_vars(POSTGRES_VARS, environ)
+    try:
+        port = int(values["DB_PORT"])
+    except ValueError:
+        raise ConfigError(f"DB_PORT must be a whole number, got {values['DB_PORT']!r}.") from None
+    return PostgresSettings(
+        aws_region=values["AWS_REGION"],
+        host=values["DB_HOST"],
+        port=port,
+        dbname=values["DB_NAME"],
+        user=values["DB_USER"],
+    )
 
 
 def _check_audit_backend(value: str) -> str:
@@ -68,17 +100,20 @@ def _check_audit_backend(value: str) -> str:
 
 
 def load_data_settings(environ: Mapping[str, str]) -> DataSettings:
-    """Settings for commands that only read data (seed, tool)."""
+    """Settings for commands that only read data (tool, server)."""
     values = require_vars(["DATA_BACKEND"], environ)
-    return DataSettings(data_backend=_check_data_backend(values["DATA_BACKEND"]))
+    data_backend = _check_data_backend(values["DATA_BACKEND"])
+    return DataSettings(data_backend=data_backend, postgres=_postgres_settings(data_backend, environ))
 
 
 def load_chat_settings(environ: Mapping[str, str]) -> ChatSettings:
     """Settings for commands that call the model (ask, chat)."""
     values = require_vars(["DATA_BACKEND", "AUDIT_BACKEND", "AWS_REGION", "BEDROCK_MODEL_ID"], environ)
+    data_backend = _check_data_backend(values["DATA_BACKEND"])
     return ChatSettings(
-        data_backend=_check_data_backend(values["DATA_BACKEND"]),
+        data_backend=data_backend,
         audit_backend=_check_audit_backend(values["AUDIT_BACKEND"]),
         aws_region=values["AWS_REGION"],
         bedrock_model_id=values["BEDROCK_MODEL_ID"],
+        postgres=_postgres_settings(data_backend, environ),
     )

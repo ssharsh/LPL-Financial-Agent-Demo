@@ -7,10 +7,17 @@ from advisor.config import DataSettings
 from advisor.data.factory import build_repository
 from advisor.data.memory_repo import MemoryRepository
 from advisor.data.repository import Repository
-from advisor.errors import ConfigError, PhaseNotAvailableError
+from advisor.errors import ConfigError
 
 OWNED = {1: {101, 102, 103}, 2: {104, 105}, 3: {106, 107}}
-SESSION_METHODS = ("list_accounts", "list_holdings", "list_transactions", "list_snapshots")
+SESSION_METHODS = (
+    "get_client",
+    "get_advisor",
+    "list_accounts",
+    "list_holdings",
+    "list_transactions",
+    "list_snapshots",
+)
 FORBIDDEN_PARAMS = {"client_id", "customer_id", "advisor_id", "owner"}
 
 
@@ -100,8 +107,15 @@ def test_session_scoped_methods_take_session_first():
 
 
 def test_build_repository():
-    assert isinstance(build_repository(DataSettings("memory")), MemoryRepository)
-    with pytest.raises(PhaseNotAvailableError, match="Phase 3"):
-        build_repository(DataSettings("postgres"))
-    with pytest.raises(ConfigError, match="Allowed value: memory"):
-        build_repository(DataSettings("other"))
+    for settings in (DataSettings("memory"), DataSettings("postgres"), DataSettings("other")):
+        with pytest.raises(ConfigError, match="There is no seed or sample data"):
+            build_repository(settings)
+
+
+def test_get_client_and_advisor(seed_repo, session_for):
+    session = session_for(1)
+    client = seed_repo.get_client(session)
+    advisor = seed_repo.get_advisor(session)
+    assert (client.client_id, client.first_name, client.last_name) == (1, "Elena", "Park")
+    assert advisor.advisor_id == session.advisor_id
+    assert (advisor.first_name, advisor.last_name) == ("Sarah", "Whitfield")

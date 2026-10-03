@@ -13,7 +13,9 @@ from decimal import Decimal
 
 from advisor.data.models import (
     Account,
+    Advisor,
     AssetClass,
+    Client,
     Holding,
     IdentityRecord,
     PortfolioSnapshot,
@@ -30,6 +32,14 @@ class Repository(ABC):
         """Client + advisor for a client ID, or None. Only identity.resolve_identity may call this."""
 
     # -- session-scoped client data --------------------------------------------------------------------------
+
+    @abstractmethod
+    def get_client(self, session: SessionContext) -> Client:
+        """The session's own client record."""
+
+    @abstractmethod
+    def get_advisor(self, session: SessionContext) -> Advisor | None:
+        """The session's advisor, or None if the advisor record does not exist."""
 
     @abstractmethod
     def list_accounts(self, session: SessionContext) -> list[Account]:
