@@ -1,20 +1,38 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import ChatWindow from "./components/chat/ChatWindow.jsx";
 import PortfolioPanel from "./components/portfolio/PortfolioPanel.jsx";
 import TranscriptLog from "./components/log/TranscriptLog.jsx";
 import ErrorState from "./components/common/ErrorState.jsx";
-import { sendMessage, makeUserMessage, getClientInfo } from "./services/chatService.js";
+import { sendMessage, makeUserMessage } from "./services/chatService.js";
+import { clientRoster, getClientData } from "./data/mockPortfolio.js";
 
 // Top-level layout for the LPL grounded portfolio chatbot.
 // Conversation state lives here so every zone (chat / portfolio / log) shares
 // one source of truth: the chat renders it, the transcript log mirrors it and
 // drives flag-for-confirmation + export.
 export default function App() {
-  const client = getClientInfo();
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState(null);
   const [lastQuestion, setLastQuestion] = useState(null);
+  // Active client from the top-right selector (advisor's roster).
+  const [selectedClientId, setSelectedClientId] = useState(clientRoster[0].id);
+  // The full dataset + profile for the active client. Everything the UI shows
+  // (portfolio panel, header identity, DataAsOf, export transcript) reads from
+  // here so switching clients updates the whole app at once.
+  const activeData = getClientData(selectedClientId);
+  const client = activeData.profile;
+  const selectedClient =
+    clientRoster.find((c) => c.id === selectedClientId) || clientRoster[0];
+
+  // Clear the conversation and log whenever the active client changes so one
+  // client's grounded answers never mix with another's (compliance). Runs once
+  // on mount with empty state, which is harmless.
+  useEffect(() => {
+    setMessages([]);
+    setError(null);
+    setLastQuestion(null);
+  }, [selectedClientId]);
 
   // Send a question: push the user message, show typing, then append the
   // grounded bot reply from the chat service. Surfaces a retryable error if the
@@ -28,7 +46,7 @@ export default function App() {
       setMessages((prev) => [...prev, userMsg]);
       setIsTyping(true);
       try {
-        const botMsg = await sendMessage(text);
+        const botMsg = await sendMessage(text, selectedClientId);
         setMessages((prev) => [...prev, botMsg]);
       } catch (err) {
         setError("Could not reach the portfolio assistant. Please try again.");
@@ -36,7 +54,7 @@ export default function App() {
         setIsTyping(false);
       }
     },
-    [isTyping]
+    [isTyping, selectedClientId]
   );
 
   // Flag a specific answer for advisor confirmation (mocked "sent" state).
@@ -69,9 +87,27 @@ export default function App() {
                 </p>
               </div>
             </div>
-            <div className="hidden text-right sm:block">
-              <p className="text-sm font-medium text-gray-900">{client.name}</p>
-              <p className="text-xs text-gray-500">{client.accountNumber}</p>
+            {/* Client selector (advisor's roster). Replaces the static name. */}
+            <div className="flex flex-col items-end gap-0.5">
+              <label
+                htmlFor="client-select"
+                className="text-[11px] font-medium uppercase tracking-wide text-gray-500"
+              >
+                Client account
+              </label>
+              <select
+                id="client-select"
+                value={selectedClientId}
+                onChange={(e) => setSelectedClientId(Number(e.target.value))}
+                className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm font-medium text-gray-900 shadow-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand"
+              >
+                {clientRoster.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500">{selectedClient.accountNumber}</p>
             </div>
           </div>
         </div>
@@ -128,7 +164,7 @@ export default function App() {
           aria-label="Portfolio"
           className="hidden flex-col rounded-lg border border-gray-200 bg-white md:flex md:w-72 xl:w-80"
         >
-          <PortfolioPanel />
+          <PortfolioPanel data={activeData} />
         </section>
       </main>
     </div>

@@ -6,7 +6,7 @@
 // the backend branch later and the rest of the UI is unchanged.
 
 import { retrieve } from "./retrievalEngine.js";
-import { client } from "../data/mockPortfolio.js";
+import { getClientData } from "../data/mockPortfolio.js";
 
 let idCounter = 0;
 function nextId() {
@@ -44,14 +44,16 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Main call. Returns a bot message grounded in the client's portfolio data.
-export async function sendMessage(text) {
+// Main call. Returns a bot message grounded in the selected client's portfolio
+// data. `clientId` defaults to client #1 so one-argument callers are unchanged.
+export async function sendMessage(text, clientId) {
   await delay(600 + Math.random() * 500);
-  const result = retrieve(text);
+  const result = retrieve(text, clientId);
   return makeBotMessage(result);
 }
 
 // Expose client metadata (name, advisor, data-as-of) for headers/badges.
-export function getClientInfo() {
-  return client;
+// `clientId` defaults to client #1 so no-argument callers are unchanged.
+export function getClientInfo(clientId) {
+  return getClientData(clientId).profile;
 }

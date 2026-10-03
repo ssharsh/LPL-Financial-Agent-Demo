@@ -3,13 +3,6 @@ import HoldingsTable from "./HoldingsTable.jsx";
 import PerformanceChart from "./PerformanceChart.jsx";
 import DataAsOfBadge from "./DataAsOfBadge.jsx";
 import {
-  summary,
-  allocation,
-  holdings,
-  performance,
-  client,
-} from "../../data/mockPortfolio.js";
-import {
   formatCurrency,
   formatSignedCurrency,
   formatPercent,
@@ -17,8 +10,11 @@ import {
 
 // The portfolio zone: a scrollable panel with the headline numbers up top and
 // the allocation / holdings / performance visuals below. This is the "where is
-// my money" view the chat answers point at.
-export default function PortfolioPanel() {
+// my money" view the chat answers point at. All numbers come from the active
+// client's `data` prop (from getClientData) so switching clients re-renders
+// the whole panel.
+export default function PortfolioPanel({ data }) {
+  const { summary, allocation, holdings, performance, profile } = data;
   const up = summary.dayChangeValue >= 0;
 
   return (
@@ -57,7 +53,7 @@ export default function PortfolioPanel() {
         </div>
       </div>
 
-      <DataAsOfBadge asOf={client.dataAsOf} />
+      <DataAsOfBadge asOf={profile.dataAsOf} />
     </div>
   );
 }

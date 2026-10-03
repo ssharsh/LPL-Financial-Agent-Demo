@@ -10,15 +10,7 @@
 // `backend` branch) plugs in later: same input (question + portfolio), same
 // output shape ({ answer, citations, data }).
 
-import {
-  client,
-  summary,
-  allocation,
-  sectors,
-  holdings,
-  performance,
-  recentActivity,
-} from "../data/mockPortfolio.js";
+import { getClientData } from "../data/mockPortfolio.js";
 import {
   formatCurrency,
   formatPercent,
@@ -48,18 +40,21 @@ export function isAdviceQuestion(text) {
 }
 
 // Each citation points at a labeled piece of the client's data so the UI can
-// show "Based on: ...". `asOf` ties every answer to the data snapshot date.
-function cite(label, detail) {
-  return { label, detail, asOf: client.dataAsOf };
+// show "Based on: ...". `asOf` ties every answer to the data snapshot date; it
+// is bound to the active client via the handler's `data` argument.
+function cite(data, label, detail) {
+  return { label, detail, asOf: data.profile.dataAsOf };
 }
 
 // --- Intent handlers -------------------------------------------------------
-// Each returns { answer: string, citations: [], data?: {...} } or null if it
-// doesn't apply. The first matching handler wins.
+// Each takes the active client's full dataset and returns
+// { answer: string, citations: [], data?: {...} } or null if it doesn't apply.
+// The first matching handler wins.
 
-function handleTotalValue(q) {
+function handleTotalValue(q, data) {
   if (!/(total|overall|net worth).*(value|worth)|what('?s| is) my (balance|total|portfolio worth)|how much is my portfolio|portfolio.*(value|worth)/.test(q))
     return null;
+  const { summary } = data;
   const dir = summary.dayChangeValue >= 0 ? "up" : "down";
   return {
     answer:
@@ -69,16 +64,17 @@ function handleTotalValue(q) {
       `Overall, your holdings are up ${formatSignedCurrency(summary.totalGainValue)} ` +
       `(${formatPercent(summary.totalGainPercent, { signed: true })}) since you invested.`,
     citations: [
-      cite("Total value", formatCurrency(summary.totalValue)),
-      cite("Today's change", `${formatSignedCurrency(summary.dayChangeValue)} (${formatPercent(summary.dayChangePercent, { signed: true })})`),
+      cite(data, "Total value", formatCurrency(summary.totalValue)),
+      cite(data, "Today's change", `${formatSignedCurrency(summary.dayChangeValue)} (${formatPercent(summary.dayChangePercent, { signed: true })})`),
     ],
     data: { kind: "summary", summary },
   };
 }
 
-function handleAllocation(q) {
+function handleAllocation(q, data) {
   if (!/(allocat|where.*(money|invested)|breakdown|asset class|diversif|mix|spread|split)/.test(q))
     return null;
+  const { allocation } = data;
   const top = [...allocation].sort((a, b) => b.percent - a.percent).slice(0, 3);
   const topText = top
     .map((a) => `${a.name} (${formatPercent(a.percent)}, ${formatCurrency(a.value)})`)
@@ -89,30 +85,33 @@ function handleAllocation(q) {
       `The largest are ${topText}. ` +
       `You can see the full breakdown in the chart on the right.`,
     citations: allocation.map((a) =>
-      cite(a.name, `${formatPercent(a.percent)} · ${formatCurrency(a.value)}`)
+      cite(data, a.name, `${formatPercent(a.percent)} · ${formatCurrency(a.value)}`)
     ),
     data: { kind: "allocation", allocation },
   };
 }
 
-function handleSectors(q) {
+function handleSectors(q, data) {
   if (!/(sector|industr|tech|technology|healthcare|energy|financ|which companies|what.*companies)/.test(q))
     return null;
+  const { sectors } = data;
   const top = [...sectors].sort((a, b) => b.percent - a.percent).slice(0, 3);
   const topText = top.map((s) => `${s.name} (${formatPercent(s.percent)})`).join(", ");
+  const largest = [...sectors].sort((a, b) => b.percent - a.percent)[0];
   return {
     answer:
       `Within your stock holdings, the biggest sector exposures are ${topText}. ` +
-      `Technology is your largest at ${formatPercent(sectors[0].percent)}, mostly through ` +
-      `your broad index funds (VTI) plus direct positions in Apple and Microsoft.`,
-    citations: sectors.map((s) => cite(s.name, formatPercent(s.percent))),
+      `${largest.name} is your largest at ${formatPercent(largest.percent)}, driven by ` +
+      `your fund and direct stock positions.`,
+    citations: sectors.map((s) => cite(data, s.name, formatPercent(s.percent))),
     data: { kind: "sectors", sectors },
   };
 }
 
-function handleHoldings(q) {
+function handleHoldings(q, data) {
   if (!/(holding|position|own|what.*(stocks|funds|etf)|invested in what|list.*(stocks|holdings))/.test(q))
     return null;
+  const { holdings } = data;
   const top = [...holdings].sort((a, b) => b.percent - a.percent).slice(0, 3);
   const topText = top
     .map((h) => `${h.ticker} (${formatPercent(h.percent)}, ${formatCurrency(h.value)})`)
@@ -122,15 +121,16 @@ function handleHoldings(q) {
       `You hold ${holdings.length} positions. Your three largest are ${topText}. ` +
       `The full list with values and gains is in the holdings table on the right.`,
     citations: holdings.map((h) =>
-      cite(`${h.ticker} — ${h.name}`, `${formatPercent(h.percent)} · ${formatCurrency(h.value)}`)
+      cite(data, `${h.ticker} — ${h.name}`, `${formatPercent(h.percent)} · ${formatCurrency(h.value)}`)
     ),
     data: { kind: "holdings", holdings },
   };
 }
 
-function handlePerformance(q) {
+function handlePerformance(q, data) {
   if (!/(perform|return|gain|loss|how.*(did|doing)|growth|over time|past (year|month)|history|change.*(year|month))/.test(q))
     return null;
+  const { performance } = data;
   const first = performance[0];
   const last = performance[performance.length - 1];
   const change = last.value - first.value;
@@ -142,37 +142,39 @@ function handlePerformance(q) {
       `a change of ${formatSignedCurrency(change)} (${formatPercent(changePct, { signed: true })}). ` +
       `The performance chart on the right shows the month-by-month path.`,
     citations: [
-      cite("12 months ago", `${formatCurrency(first.value)} (${formatDate(first.date)})`),
-      cite("Now", `${formatCurrency(last.value)} (${formatDate(last.date)})`),
-      cite("12-month change", `${formatSignedCurrency(change)} (${formatPercent(changePct, { signed: true })})`),
+      cite(data, "12 months ago", `${formatCurrency(first.value)} (${formatDate(first.date)})`),
+      cite(data, "Now", `${formatCurrency(last.value)} (${formatDate(last.date)})`),
+      cite(data, "12-month change", `${formatSignedCurrency(change)} (${formatPercent(changePct, { signed: true })})`),
     ],
     data: { kind: "performance", performance },
   };
 }
 
-function handleActivity(q) {
+function handleActivity(q, data) {
   if (!/(recent|activity|transaction|dividend|deposit|what.*(happened|changed)|last (buy|sell|trade))/.test(q))
     return null;
+  const { recentActivity } = data;
   const lines = recentActivity
     .map((a) => `${formatDate(a.date)}: ${a.description} (${formatSignedCurrency(a.amount)})`)
     .join("; ");
   return {
     answer: `Here is your recent account activity — ${lines}.`,
     citations: recentActivity.map((a) =>
-      cite(`${a.type} · ${formatDate(a.date)}`, `${a.description} (${formatSignedCurrency(a.amount)})`)
+      cite(data, `${a.type} · ${formatDate(a.date)}`, `${a.description} (${formatSignedCurrency(a.amount)})`)
     ),
     data: { kind: "activity", recentActivity },
   };
 }
 
-function handleCash(q) {
+function handleCash(q, data) {
   if (!/(cash|available|buying power|liquid|how much.*(cash|available))/.test(q)) return null;
+  const { summary } = data;
   return {
     answer:
       `You have ${formatCurrency(summary.cashAvailable)} in available cash and money market ` +
       `holdings, which is about ${formatPercent((summary.cashAvailable / summary.totalValue) * 100)} ` +
       `of your portfolio.`,
-    citations: [cite("Available cash", formatCurrency(summary.cashAvailable))],
+    citations: [cite(data, "Available cash", formatCurrency(summary.cashAvailable))],
     data: { kind: "summary", summary },
   };
 }
@@ -190,8 +192,11 @@ const HANDLERS = [
 ];
 
 // Main entry point. Returns a grounded result or a graceful fallback.
-export function retrieve(question) {
+// `clientId` selects which client's data to ground in; it defaults to client #1
+// so existing single-argument callers (and their assertions) behave unchanged.
+export function retrieve(question, clientId) {
   const q = (question || "").toLowerCase().trim();
+  const data = getClientData(clientId);
 
   if (!q) {
     return {
@@ -207,13 +212,13 @@ export function retrieve(question) {
       answer:
         "I can explain what is in your portfolio and how it is invested, but I can't give " +
         "financial advice or recommendations. For guidance like this, please reach out to " +
-        `your advisor, ${client.advisorName} at ${client.advisorFirm}.`,
+        `your advisor, ${data.profile.advisorName} at ${data.profile.advisorFirm}.`,
       citations: [],
     };
   }
 
   for (const handler of HANDLERS) {
-    const result = handler(q);
+    const result = handler(q, data);
     if (result) {
       return { type: "grounded", ...result };
     }
