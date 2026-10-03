@@ -1,21 +1,9 @@
-import ConfirmationBadge from "./ConfirmationBadge.jsx";
 import { downloadTranscript } from "../../utils/exportLog.js";
 import { formatTime } from "../../utils/format.js";
 
-// Readable, timestamped record of the whole conversation. Clients can flag any
-// individual answer for advisor confirmation, and export the full log to send
-// to LPL for review.
-export default function TranscriptLog({
-  messages,
-  client,
-  onRequestConfirmation,
-}) {
-  const flaggedCount = messages.filter(
-    (m) => m.role === "assistant" && m.confirmation === "requested"
-  ).length;
-
+// Readable, timestamped record of the whole conversation, exportable as text.
+export default function TranscriptLog({ messages, client }) {
   const hasMessages = messages.length > 0;
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
@@ -29,22 +17,10 @@ export default function TranscriptLog({
           Export log
         </button>
       </div>
-
-      {flaggedCount > 0 && (
-        <div className="flex items-center gap-1.5 border-b border-brand/10 bg-brand/5 px-4 py-2 text-[11px] font-medium text-brand-dark">
-          <span aria-hidden="true">✓</span>
-          <span>
-            {flaggedCount} answer{flaggedCount > 1 ? "s" : ""} flagged for LPL
-            advisor review.
-          </span>
-        </div>
-      )}
-
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {!hasMessages ? (
           <p className="text-center text-xs text-gray-500">
-            Your conversation will be logged here. You can flag any answer for
-            advisor confirmation and export the full log for LPL to review.
+            Your conversation will be logged here. You can export the full log at any time.
           </p>
         ) : (
           messages.map((m) => (
@@ -61,25 +37,13 @@ export default function TranscriptLog({
                   {m.role === "user" ? "You" : "Assistant"}
                 </span>
                 <span className="text-gray-500">{formatTime(m.createdAt)}</span>
-                {m.role === "assistant" && (
-                  <ConfirmationBadge status={m.confirmation} />
+                {m.meetingRequested && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-medium text-brand-dark">
+                    ✓ Meeting requested
+                  </span>
                 )}
               </div>
               <p className="mt-0.5 text-gray-700">{m.text}</p>
-
-              {/* Per-answer flag action, only on grounded assistant answers */}
-              {m.role === "assistant" &&
-                m.type !== "advice_declined" &&
-                m.type !== "unknown" &&
-                m.confirmation !== "requested" && (
-                  <button
-                    type="button"
-                    onClick={() => onRequestConfirmation(m.id)}
-                    className="mt-1 text-[10px] font-medium text-brand underline-offset-2 transition hover:text-brand-dark hover:underline"
-                  >
-                    Flag this answer for advisor confirmation
-                  </button>
-                )}
             </div>
           ))
         )}

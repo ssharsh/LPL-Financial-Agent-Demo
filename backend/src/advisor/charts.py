@@ -74,7 +74,25 @@ def accounts_chart(result: dict[str, Any]) -> ChartDict | None:
 
 
 # Highest priority first: a turn that looked at performance is best shown as a line, and so on.
+def price_history_chart(result: dict[str, Any]) -> ChartDict | None:
+    """One line per ticker: closing price by date."""
+    rows = result["rows"]
+    if not rows:
+        return None
+    return {"type": "line", "x": "date", "y": "close_price", "series": "ticker", "rows": rows}
+
+
+def security_stats_chart(result: dict[str, Any]) -> ChartDict | None:
+    """Price return % per ticker, best to worst."""
+    rows = [{"ticker": r["ticker"], "price_return_pct": r["price_return_pct"]} for r in result["rows"]]
+    if not rows:
+        return None
+    return {"type": "bar", "x": "ticker", "y": "price_return_pct", "series": "", "rows": rows}
+
+
 _BUILDERS: tuple[tuple[str, Callable[[dict[str, Any]], ChartDict | None]], ...] = (
+    ("get_price_history", price_history_chart),
+    ("get_security_stats", security_stats_chart),
     ("get_performance", performance_chart),
     ("get_holdings", allocation_chart),
     ("get_transactions", transactions_chart),

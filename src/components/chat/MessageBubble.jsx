@@ -14,7 +14,7 @@ function renderBold(text) {
 // Renders one chat message. User messages are simple right-aligned bubbles.
 // Assistant messages show the grounded answer, the "Based on:" citations that
 // back it up, and a button to flag the answer for advisor confirmation.
-export default function MessageBubble({ message, onRequestConfirmation }) {
+export default function MessageBubble({ message, onScheduleMeeting }) {
   const isUser = message.role === "user";
 
   if (isUser) {
@@ -38,7 +38,6 @@ export default function MessageBubble({ message, onRequestConfirmation }) {
   }
 
   const declined = message.type === "advice_declined";
-  const unknown = message.type === "unknown";
 
   return (
     <div className="message-in flex items-start justify-start gap-2">
@@ -95,26 +94,28 @@ export default function MessageBubble({ message, onRequestConfirmation }) {
           )}
         </div>
 
-        {/* Footer: timestamp + flag-for-confirmation (only on grounded answers) */}
+        {/* Advice requests: offer a meeting with the advisor (downloads a PDF summary of the chat) */}
+        {declined && (
+          <div className="flex items-center gap-2 px-1">
+            <button
+              type="button"
+              onClick={() => onScheduleMeeting(message.id)}
+              className="rounded-md bg-brand px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1"
+            >
+              📅 Set up meeting with advisor
+            </button>
+            {message.meetingRequested && (
+              <span className="text-[11px] font-medium text-brand" role="status">
+                ✓ Meeting requested. Summary PDF downloaded for your advisor.
+              </span>
+            )}
+          </div>
+        )}
+        {/* Footer: timestamp */}
         <div className="flex items-center gap-3 px-1">
           <span className="text-[10px] text-gray-500">{formatTime(message.createdAt)}</span>
           {message.logId && (
             <span className="text-[10px] text-gray-500">Log {message.logId}</span>
-          )}
-          {!declined && !unknown && (
-            message.confirmation === "requested" ? (
-              <span className="flex items-center gap-1 text-[10px] font-medium text-brand">
-                <span aria-hidden="true">✓</span> Sent to LPL for advisor review
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onRequestConfirmation(message.id)}
-                className="rounded-full border border-brand/30 px-2 py-0.5 text-[10px] font-medium text-brand transition hover:bg-brand/10 hover:text-brand-dark"
-              >
-                Request advisor confirmation
-              </button>
-            )
           )}
         </div>
       </div>

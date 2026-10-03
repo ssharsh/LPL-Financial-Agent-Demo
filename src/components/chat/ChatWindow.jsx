@@ -2,22 +2,24 @@ import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble.jsx";
 import TypingIndicator from "./TypingIndicator.jsx";
 import ChatInput from "./ChatInput.jsx";
-import SuggestedPrompts from "./SuggestedPrompts.jsx";
 
 // The chat thread. Conversation state (messages, isTyping) lives in App.jsx and
-// is passed in, so other panels (portfolio, transcript log) can read the same
-// conversation. This component handles rendering + scroll behavior.
+// is passed in, so other panels (portfolio) can read the same conversation.
+// This component handles rendering + scroll behavior.
 export default function ChatWindow({
   messages,
   isTyping,
   onSend,
-  onRequestConfirmation,
+  onScheduleMeeting,
 }) {
-  const bottomRef = useRef(null);
+  const scrollRef = useRef(null);
 
-  // Auto-scroll to the newest message / typing indicator.
+  // Auto-scroll to the newest message / typing indicator. Scroll only the
+  // message container: scrollIntoView would also scroll the page itself and
+  // reveal blank space below the layout.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollRef.current;
+    el?.scrollTo?.({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, isTyping]);
 
   const isEmpty = messages.length === 0;
@@ -26,6 +28,7 @@ export default function ChatWindow({
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Scrolling message area */}
       <div
+        ref={scrollRef}
         className="flex-1 space-y-4 overflow-y-auto p-4"
         role="log"
         aria-live="polite"
@@ -48,7 +51,6 @@ export default function ChatWindow({
                 it has performed — answered straight from your own account data.
               </p>
             </div>
-            <SuggestedPrompts onPick={onSend} disabled={isTyping} />
           </div>
         ) : (
           <>
@@ -56,21 +58,13 @@ export default function ChatWindow({
               <MessageBubble
                 key={m.id}
                 message={m}
-                onRequestConfirmation={onRequestConfirmation}
+                onScheduleMeeting={onScheduleMeeting}
               />
             ))}
             {isTyping && <TypingIndicator />}
           </>
         )}
-        <div ref={bottomRef} />
       </div>
-
-      {/* Suggested prompts stay available below the thread once chatting starts */}
-      {!isEmpty && (
-        <div className="border-t border-gray-100 px-4 py-2">
-          <SuggestedPrompts onPick={onSend} disabled={isTyping} />
-        </div>
-      )}
 
       <ChatInput onSend={onSend} disabled={isTyping} />
     </div>

@@ -48,7 +48,7 @@ describe("chatService — message shaping", () => {
     expect(m.role).toBe("assistant");
     expect(m.text).toBe(envelope.text);
     expect(m.type).toBe("grounded");
-    expect(m.confirmation).toBe("none");
+    expect(m.declinedReason).toBeNull();
     expect(m.citations).toEqual([
       {
         label: "Portfolio snapshot",

@@ -88,7 +88,14 @@ def build_envelope(text: str, ledger: RequestLedger, log_id: str) -> Envelope:
         chart=chart_from_ledger(ledger),
         log_id=log_id,
         verification=None,
-        declined=None,
+        declined=next(
+            (
+                Declined(reason=str(c.result.get("topic", "")))
+                for c in ledger.calls()
+                if c.tool == "flag_advice_request" and c.status == "success" and c.result
+            ),
+            None,
+        ),
     )
 
 

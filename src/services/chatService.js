@@ -93,8 +93,8 @@ export function envelopeToMessage(env) {
     interpretation: env?.interpretation ?? null,
     logId: env?.log_id ?? null,
     createdAt: new Date().toISOString(),
-    // Clients can flag an answer for advisor review. Starts unflagged.
-    confirmation: "none", // none | requested
+    // What advice the client asked for, when the backend declined it.
+    declinedReason: env?.declined?.reason ?? null,
   };
 }
 

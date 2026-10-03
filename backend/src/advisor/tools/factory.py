@@ -11,12 +11,12 @@ from advisor.data.models import TxnType
 from advisor.data.repository import Repository
 from advisor.errors import ToolArgumentError
 from advisor.identity import SessionContext
-from advisor.tools import accounts, holdings, performance, transactions
+from advisor.tools import accounts, holdings, performance, prices, stats, transactions
 from advisor.tools.common import ToolOutput
 from advisor.tools.ledger import RequestLedger
 
 # PROVISIONAL (pending DB teammate): v2 has no documents table, so there is no get_documents tool (P2).
-TOOL_NAMES = ("get_accounts", "get_holdings", "get_transactions", "get_performance")
+TOOL_NAMES = ("get_accounts", "get_holdings", "get_transactions", "get_performance", "get_price_history", "get_security_stats", "flag_advice_request")
 
 RunFn = Callable[[SessionContext, Repository, Any], ToolOutput]
 
@@ -127,7 +127,72 @@ def build_tools(
             {"start_month": start_month, "end_month": end_month, "account_id": account_id},
         )
 
-    return [get_accounts, get_holdings, get_transactions, get_performance]
+    @tool
+    def get_price_history(
+        tickers: list[str] | None = None,
+        top_n: int | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict:
+        """Closing price over time for securities the client holds. Use this for any chart or question about
+        how a stock/fund's price moved, e.g. "graph my top 3 stocks". A line chart (one line per ticker) is
+        produced automatically from the result.
+        Args:
+            tickers: Tickers to include (must be held by the client). Omit to use the top holdings.
+            top_n: When tickers is omitted, how many top holdings by market value to include (default 3).
+            start_date: First date to include, as YYYY-MM-DD. Omit for all history.
+            end_date: Last date to include, as YYYY-MM-DD. Omit for all history.
+        """
+        return _invoke(
+            "get_price_history",
+            prices.Args,
+            prices.run,
+            {"tickers": tickers, "top_n": top_n, "start_date": start_date, "end_date": end_date},
+        )
+
+    @tool
+    def get_security_stats(
+        tickers: list[str] | None = None,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict:
+        """Per-holding performance and risk statistics, ranked best to worst by price return. Use for "best/worst
+        performing stocks", returns per stock, volatility, risk, drawdown, best/worst month, gain/loss vs cost
+        basis, unrealized gains, expense ratio, dividend yield, or comparing holdings. All figures are computed
+        for you; copy them exactly. A bar chart of price return by ticker is produced automatically.
+        Args:
+            tickers: Tickers to include (must be held by the client). Omit for all holdings.
+            start_date: First date to include, as YYYY-MM-DD. Omit for all history.
+            end_date: Last date to include, as YYYY-MM-DD. Omit for all history.
+        """
+        return _invoke(
+            "get_security_stats",
+            stats.Args,
+            stats.run,
+            {"tickers": tickers, "start_date": start_date, "end_date": end_date},
+        )
+
+    @tool
+    def flag_advice_request(topic: str) -> dict:
+        """Call this whenever the client asks for investment advice, a recommendation, an opinion on what to do,
+        or a prediction/forecast (e.g. "should I sell VTI?", "what should I buy?", "will the market go up?").
+        It shows the client a button to set up a meeting with their advisor. Still decline the advice in words.
+        Args:
+            topic: One short sentence summarizing what advice the client asked for.
+        """
+        result = {"flagged": True, "topic": topic}
+        ledger.record(tool="flag_advice_request", arguments={"topic": topic}, status="success", result=result)
+        return result
+
+    return [
+        get_accounts,
+        get_holdings,
+        get_transactions,
+        get_performance,
+        get_price_history,
+        get_security_stats,
+        flag_advice_request,
+    ]
 
 
 def call_tool(tools: list[DecoratedFunctionTool], name: str, args: dict[str, Any]) -> dict[str, Any]:

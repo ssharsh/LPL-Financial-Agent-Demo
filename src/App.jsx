@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import ChatWindow from "./components/chat/ChatWindow.jsx";
 import PortfolioPanel from "./components/portfolio/PortfolioPanel.jsx";
-import TranscriptLog from "./components/log/TranscriptLog.jsx";
 import ErrorState from "./components/common/ErrorState.jsx";
+import { downloadAdvisorSummary } from "./utils/advisorSummary.js";
 import {
   sendMessage,
   makeUserMessage,
@@ -136,17 +136,20 @@ export default function App() {
     [isTyping, conversationId, selectedClientId]
   );
 
-  // Flag a specific answer for advisor confirmation (mocked "sent" state).
-  const handleRequestConfirmation = useCallback((messageId) => {
-    setMessages((prev) =>
-      prev.map((m) =>
-        m.id === messageId ? { ...m, confirmation: "requested" } : m
-      )
-    );
-  }, []);
+  // "Set up meeting with advisor": download a PDF summary of the chat for the
+  // advisor and mark the request as sent on that answer.
+  const handleScheduleMeeting = useCallback(
+    (messageId) => {
+      downloadAdvisorSummary(messages, client, portfolio);
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, meetingRequested: true } : m))
+      );
+    },
+    [messages, client, portfolio]
+  );
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-screen flex-col overflow-hidden">
       {/* Light header with a thin brand-green keyline; brand green is an accent only */}
       <header className="border-b-2 border-brand bg-white shadow-soft">
         <div className="mx-auto flex max-w-[1600px] flex-col gap-1 px-4 py-4 sm:px-6">
@@ -208,18 +211,6 @@ export default function App() {
       {/* Main 3-zone layout: transcript log | chat | portfolio.
           Panels collapse on smaller screens so chat stays usable on mobile. */}
       <main className="mx-auto flex w-full max-w-[1600px] flex-1 gap-4 overflow-hidden p-2 sm:p-4">
-        {/* Zone 1: Transcript log (left, visible from lg) */}
-        <section
-          aria-label="Conversation log"
-          className="hidden flex-col rounded-lg border border-gray-200 bg-white lg:flex lg:w-64 xl:w-72"
-        >
-          <TranscriptLog
-            messages={messages}
-            client={client}
-            onRequestConfirmation={handleRequestConfirmation}
-          />
-        </section>
-
         {/* Zone 2: Chat (center) */}
         <section
           aria-label="Chat"
@@ -242,14 +233,14 @@ export default function App() {
             messages={messages}
             isTyping={isTyping}
             onSend={handleSend}
-            onRequestConfirmation={handleRequestConfirmation}
+            onScheduleMeeting={handleScheduleMeeting}
           />
         </section>
 
         {/* Zone 3: Portfolio (right, visible from md so all three show at ~1366px) */}
         <section
           aria-label="Portfolio"
-          className="hidden flex-col rounded-lg border border-gray-200 bg-white md:flex md:w-72 xl:w-80"
+          className="hidden flex-col rounded-lg border border-gray-200 bg-white md:flex md:w-96 xl:w-[32rem]"
         >
           <PortfolioPanel
             portfolio={portfolio}
