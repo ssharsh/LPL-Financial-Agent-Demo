@@ -37,7 +37,7 @@ export default function MessageBubble({ message, onRequestConfirmation }) {
         className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full bg-brand text-[10px] font-bold tracking-wide text-white shadow-soft"
         aria-hidden="true"
       >
-        LPL
+        OR
       </div>
       <div className="max-w-[85%] space-y-2">
         <div

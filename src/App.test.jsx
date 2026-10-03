@@ -104,7 +104,7 @@ describe("Header still intact alongside the dropdown", () => {
   it("DD-10: the app title remains visible", () => {
     render(<App />);
     expect(
-      screen.getByRole("heading", { name: /lpl portfolio assistant/i })
+      screen.getByRole("heading", { name: /orama portfolio assistant/i })
     ).toBeInTheDocument();
   });
 });

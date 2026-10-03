@@ -80,7 +80,7 @@ export default function App() {
               />
               <div>
                 <h1 className="text-lg font-semibold text-brand">
-                  LPL Portfolio Assistant
+                  Orama Portfolio Assistant
                 </h1>
                 <p className="text-sm text-gray-600">
                   Explore your portfolio: where your money is and how it is invested.

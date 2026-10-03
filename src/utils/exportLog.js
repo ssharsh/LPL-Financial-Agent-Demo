@@ -4,7 +4,7 @@ import { formatDate, formatTime } from "./format.js";
 // client can send to LPL to have the chatbot's answers confirmed by an advisor.
 export function buildTranscript(messages, client) {
   const lines = [];
-  lines.push("LPL PORTFOLIO ASSISTANT — CONVERSATION TRANSCRIPT");
+  lines.push("ORAMA PORTFOLIO ASSISTANT — CONVERSATION TRANSCRIPT");
   lines.push("=".repeat(52));
   lines.push(`Client:        ${client.name}`);
   lines.push(`Account:       ${client.accountNumber}`);
