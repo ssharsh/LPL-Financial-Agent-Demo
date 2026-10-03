@@ -4,6 +4,7 @@ import {
   makeUserMessage,
   envelopeToMessage,
   getPortfolio,
+  getClients,
   toClientInfo,
 } from "./chatService.js";
 
@@ -107,6 +108,23 @@ describe("chatService — HTTP", () => {
     const p = await getPortfolio();
     expect(p.client.name).toBe("Elena Park");
     expect(fetchMock.mock.calls[0][0]).toBe("/api/portfolio");
+  });
+
+  it("CS-10b: clientId is sent to /api/chat and /api/portfolio", async () => {
+    const fetchMock = vi.fn(async () => jsonResponse(200, envelope));
+    vi.stubGlobal("fetch", fetchMock);
+    await sendMessage("hi", "conv-1", 3);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).client_id).toBe("3");
+    await getPortfolio(3);
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/portfolio?client_id=3");
+  });
+
+  it("CS-10c: getClients GETs /api/clients", async () => {
+    const body = { clients: [{ client_id: 1, name: "Elena Park" }], default_client_id: "1" };
+    const fetchMock = vi.fn(async () => jsonResponse(200, body));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await getClients()).toEqual(body);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/clients");
   });
 });
 

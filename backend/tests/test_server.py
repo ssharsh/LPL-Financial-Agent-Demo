@@ -160,6 +160,18 @@ def test_portfolio_client_1(seed_repo, session_for):
     assert "Cash" in {r["asset_class"] for r in body["charts"]["allocation"]["rows"]}
 
 
+def test_clients_lists_every_client_sorted(seed_repo):
+    resp = client_for().get("/api/clients")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["default_client_id"] == "1"
+    assert body["clients"][0] == {"client_id": 1, "name": "Elena Park"}
+    assert {"client_id": 3, "name": "Priya Raman"} in body["clients"]
+    ids = [c["client_id"] for c in body["clients"]]
+    assert ids == sorted(ids) and len(ids) == len(set(ids))
+    assert set(body["clients"][0]) == {"client_id", "name"}
+
+
 def test_portfolio_other_client_and_bad_client():
     client = client_for()
     assert client.get("/api/portfolio?client_id=3").json()["client"]["name"] == "Priya Raman"

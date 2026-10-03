@@ -31,6 +31,11 @@ class Repository(ABC):
     def lookup_identity(self, client_id: int) -> IdentityRecord | None:
         """Client + advisor for a client ID, or None. Only identity.resolve_identity may call this."""
 
+    @abstractmethod
+    def list_client_directory(self) -> list[tuple[int, str]]:
+        """(client_id, display name) for every client, sorted by ID. DEMO ONLY: feeds the dev-mode client
+        picker (GET /api/clients); dev identity already lets any caller pick a client ID."""
+
     # -- session-scoped client data --------------------------------------------------------------------------
 
     @abstractmethod

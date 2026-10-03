@@ -44,6 +44,9 @@ class MemoryRepository(Repository):
             return None
         return IdentityRecord(client_id=client.client_id, advisor_id=client.advisor_id)
 
+    def list_client_directory(self) -> list[tuple[int, str]]:
+        return [(c.client_id, f"{c.first_name} {c.last_name}") for _, c in sorted(self._clients.items())]
+
     # -- session-scoped ---------------------------------------------------------------------------------------
 
     def _owned(self, session: SessionContext, account_ids: Iterable[int] | None) -> set[int]:

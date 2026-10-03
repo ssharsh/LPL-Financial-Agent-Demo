@@ -27,13 +27,14 @@ npm run backend   # terminal 1
 npm run dev       # terminal 2, then open http://localhost:5173
 ```
 
-Add `?client=1`, `?client=2`, or `?client=3` to the URL to switch demo client (default 1, or `DEMO_CLIENT_ID`).
+Pick a client with the Client account dropdown (populated from `/api/clients`); it resets the conversation and keeps `?client=N` in the URL in sync, so `?client=N` also opens that client directly (default 1, or `DEMO_CLIENT_ID`).
 
 Endpoints (`backend/src/advisor/server.py`):
 
 - `GET /api/health`: status and whether chat is configured
 - `POST /api/chat` `{message, conversation_id, client_id?}`: the response envelope, unchanged
 - `GET /api/portfolio?client_id=N`: totals, accounts, holdings, performance, and two chart specs for the side panel
+- `GET /api/clients`: `{clients: [{client_id, name}], default_client_id}` for the demo client picker
 
 Errors are always `{"error": "..."}`. Conversation history lives in server memory (lost on restart).
 

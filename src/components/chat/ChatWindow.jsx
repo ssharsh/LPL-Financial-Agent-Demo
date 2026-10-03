@@ -34,10 +34,10 @@ export default function ChatWindow({
         {isEmpty ? (
           <div className="message-in flex h-full flex-col items-center justify-center gap-5 text-center">
             <div
-              className="flex h-14 w-14 select-none items-center justify-center rounded-2xl bg-brand text-sm font-bold tracking-wide text-white shadow-soft"
+              className="flex h-14 w-14 select-none items-center justify-center rounded-2xl bg-brand text-xs font-bold tracking-wide text-white shadow-soft"
               aria-hidden="true"
             >
-              LPL
+              Orama
             </div>
             <div>
               <h3 className="text-xl font-bold text-brand">

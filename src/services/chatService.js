@@ -26,13 +26,22 @@ export function makeUserMessage(text) {
   };
 }
 
-// Optional ?client=N in the page URL picks the demo client (1, 2 or 3).
+// Optional ?client=N in the page URL picks the demo client on load; the client
+// selector keeps it in sync so a reload or shared link opens the same client.
 export function clientParam() {
   if (typeof window === "undefined") return null;
   return new URLSearchParams(window.location.search).get("client");
 }
 
-// One id per page load so the backend keeps the conversation history.
+export function setClientParam(clientId) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.searchParams.set("client", String(clientId));
+  window.history.replaceState(window.history.state, "", url);
+}
+
+// One id per conversation (page load or client switch) so the backend keeps
+// the conversation history.
 export function newConversationId() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `conv-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -89,26 +98,31 @@ export function envelopeToMessage(env) {
   };
 }
 
-// Send one question; resolves to an assistant message or throws an Error with
-// a message that is safe to show the user.
-export async function sendMessage(text, conversationId) {
+// Send one question for the selected client (omit clientId for the backend's
+// default); resolves to an assistant message or throws an Error with a message
+// that is safe to show the user.
+export async function sendMessage(text, conversationId, clientId) {
   const env = await requestJson("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       message: text,
       conversation_id: conversationId,
-      client_id: clientParam() ?? undefined,
+      client_id: clientId != null ? String(clientId) : undefined,
     }),
   });
   return envelopeToMessage(env);
 }
 
 // Portfolio panel + header data, from the same fact tools the chat uses.
-export async function getPortfolio() {
-  const client = clientParam();
-  const query = client ? `?client_id=${encodeURIComponent(client)}` : "";
+export async function getPortfolio(clientId) {
+  const query = clientId != null ? `?client_id=${encodeURIComponent(clientId)}` : "";
   return requestJson(`/api/portfolio${query}`);
+}
+
+// Client selector options: {clients: [{client_id, name}], default_client_id}.
+export async function getClients() {
+  return requestJson("/api/clients");
 }
 
 // Header / transcript identity shown while the portfolio is loading.

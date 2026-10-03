@@ -10,6 +10,7 @@ Endpoints:
     GET  /api/health                      -> {"status": "ok", "chat_configured", "chat_config_error", ...}
     POST /api/chat {message, conversation_id?, client_id?} -> the envelope JSON, unchanged
     GET  /api/portfolio[?client_id=N]     -> client, totals, accounts, holdings, performance, charts
+    GET  /api/clients                     -> {"clients": [{"client_id", "name"}], "default_client_id"} (demo picker)
 Errors are always {"error": "<message>"}.
 """
 import asyncio
@@ -212,6 +213,15 @@ def create_app(
             return _error(500, "Internal server error")
         return JSONResponse(envelope.model_dump(mode="json"))
 
+    async def clients(request: Request) -> JSONResponse:
+        # DEMO ONLY: the dev-mode client picker. Dev identity already lets the caller choose any client ID.
+        return JSONResponse(
+            {
+                "clients": [{"client_id": cid, "name": name} for cid, name in repo.list_client_directory()],
+                "default_client_id": default_client_id,
+            }
+        )
+
     def portfolio(request: Request) -> JSONResponse:
         # Sync endpoint: Starlette runs it in a threadpool.
         try:
@@ -291,6 +301,7 @@ def create_app(
             Route("/api/health", health, methods=["GET"]),
             Route("/api/chat", chat, methods=["POST"]),
             Route("/api/portfolio", portfolio, methods=["GET"]),
+            Route("/api/clients", clients, methods=["GET"]),
         ],
         exception_handlers={HTTPException: http_error},
     )

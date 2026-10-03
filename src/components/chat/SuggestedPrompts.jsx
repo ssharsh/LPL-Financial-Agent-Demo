@@ -12,7 +12,7 @@ const PROMPTS = [
 
 export default function SuggestedPrompts({ onPick, disabled }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap justify-center gap-2">
       {PROMPTS.map((prompt) => (
         <button
           key={prompt}
